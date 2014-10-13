@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"github.com/isucon4/benchmarker/ip"
+	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
 	"github.com/moovweb/gokogiri"
 	"github.com/moovweb/gokogiri/html"
 	"github.com/moovweb/gokogiri/xml"

@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"github.com/isucon4/benchmarker/ip"
-	"github.com/isucon4/benchmarker/user"
+	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
+	"github.com/isucon/isucon4/qualifier/benchmarker/user"
 	"math/rand"
 	"time"
 )

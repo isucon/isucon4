@@ -3,8 +3,8 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"github.com/isucon4/benchmarker/ip"
-	"github.com/isucon4/benchmarker/user"
+	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
+	"github.com/isucon/isucon4/qualifier/benchmarker/user"
 	"log"
 	"net/http"
 	"net/http/cookiejar"

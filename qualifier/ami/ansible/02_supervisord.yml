@@ -1,0 +1,17 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  sudo: yes
+  tasks:
+    - command: easy_install pip
+      args:
+        creates: /usr/bin/pip
+    - pip: name=supervisor version=3.1.1
+    - copy: src=../files/supervisord.init dest=/etc/init.d/supervisord owner=root mode=755
+    - service: name=supervisord enabled=true
+    - copy: src=../files/supervisord.conf dest=/etc/supervisord.conf owner=root mode=644
+      notify:
+        - restart supervisord
+  handlers:
+    - name: restart supervisord
+      action: service name=supervisord state=restarted

@@ -1,0 +1,16 @@
+# ISUCON4 qualifier Golang implementation
+
+## How to build and run
+
+```shel
+$ ./build.sh
+$ ./golang-webapp
+```
+
+## How to development
+
+```shell
+$ ./build.sh
+$ go get github.com/codegangsta/gin
+$ gin
+```

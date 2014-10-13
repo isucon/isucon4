@@ -1,0 +1,18 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  sudo: yes
+  tasks:
+    - command: rm -rf /tmp/benchmarker
+      args:
+        removes: /tmp/benchmarker
+    - synchronize: src=../../benchmarker dest=/tmp/ recursive=yes delete=yes copy_links=yes
+      sudo: no
+    - command: chown -R isucon:isucon /tmp/benchmarker
+    - name: build benchmarker
+      command: /home/isucon/env.sh make release
+      sudo_user: isucon
+      args:
+        chdir: /tmp/benchmarker
+    - command: mv /tmp/benchmarker/benchmarker /home/isucon/
+      sudo_user: isucon

@@ -1,0 +1,8 @@
+# ISUCON4 qualifier Node.js implementation
+
+## How to build and run
+
+```shel
+$ npm install
+$ node app.js
+```

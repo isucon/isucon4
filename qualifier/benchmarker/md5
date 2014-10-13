@@ -1,0 +1,5 @@
+#!/bin/bash
+
+FN=$1
+
+cat ${FN} | bash -c '(if [ -e /sbin/md5 ]; then md5; else md5sum -; fi)|cut -d" " -f 1'

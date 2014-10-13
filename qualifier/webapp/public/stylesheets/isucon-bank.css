@@ -1,0 +1,39 @@
+@-webkit-keyframes blink {
+ from {
+  opacity: 1;
+ }
+ to {
+  opacity: 0;
+ }
+}
+
+.container {
+  max-width: 630px;
+}
+
+#topbar {
+  margin: 0 0 20px 0;
+  padding: 50px 20px 20px 20px;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
+  background-color: #efefef;
+}
+
+#be-careful-phising .panel-heading {
+  font-size: 150%;
+}
+
+.hikaru-mozi {
+  -webkit-animation-name: blink;
+  -webkit-animation-duration: 0.5s;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-direction: alternate;
+  -webkit-animation-delay: 0s;
+}
+
+#zandaka {
+  margin: 0;
+  font-size: 300%;
+  font-weight: bold;
+}

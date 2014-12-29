@@ -1,0 +1,25 @@
+#topbar {
+  margin: 0 0 20px 0;
+  padding: 5px 20px 20px 20px;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
+  background-color: #efefef;
+}
+
+#topbar h1 {
+  font-size: 36px;
+}
+
+#navs {
+  margin-bottom: 20px;
+}
+
+#ad_container {
+  margin-top: 10px;
+  text-align: center;
+}
+
+#ad_container video {
+  max-width: 60%;
+  height: auto;
+}

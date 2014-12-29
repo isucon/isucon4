@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="javascripts/jquery.js" type="application/javascript"></script>
+    <script src="javascripts/mustache.js" type="application/javascript"></script>
+    <script src="javascripts/isuad.js" type="application/javascript"></script>
+    <script src="javascripts/index.js" type="application/javascript"></script>
+    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/stylesheets/bootflat.min.css" type="text/css">
+    <link rel="stylesheet" href="/stylesheets/index.css" type="text/css">
+    <title>イスコンアド テストページ</title>
+  </head>
+  <body>
+    <div class="container">
+      <div id="topbar">
+        <h1>イスコン Ad</h1>
+      </div>
+
+      <section id="navs">
+        <ul class="nav nav-pills">
+          <li><a href="/index.html">Manage ads</a></li>
+          <li class="active"><a href="/view.html">View test</a></li>
+        </ul>
+      </section>
+
+      <section id="user_tester" class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">User attribute test</h2>
+        </div>
+
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <p>You can set your <code>isuad</code> cookie here.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-2 text-right">
+              <p>Current:</p>
+            </div>
+            <div id="user_current" class="col-md-10">
+              <p></p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-2 text-right">
+              Set:
+            </div>
+            <div id="user_testform" class="col-md-10">
+              <form class="form-inline">
+                <select id="user_form_gender" class="form-control">
+                  <option value="0">Female</option>
+                  <option value="1">Male</option>
+                </select>
+                <input id="user_form_age" type="numeric" placeholder="age" class="form-control">
+                <input type="button" id="user_form_submit" value="Set cookie" class="btn btn-primary">
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="display_tester" class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">Display test</h2>
+        </div>
+
+        <div class="panel-body">
+          <div id="display_testform">
+            <form class="form-inline">
+              <input id="display_form_slot" type="text" placeholder="slot" class="form-control">
+              <input type="button" id="display_form_show" value="Show" class="btn btn-primary">
+            </form>
+          </div>
+
+          <div id="ad_container">
+            <p>Ad will be here</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

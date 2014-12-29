@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="javascripts/jquery.js" type="application/javascript"></script>
+    <script src="javascripts/mustache.js" type="application/javascript"></script>
+    <script src="javascripts/isuad.js" type="application/javascript"></script>
+    <script src="javascripts/index.js" type="application/javascript"></script>
+    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/stylesheets/bootflat.min.css" type="text/css">
+    <link rel="stylesheet" href="/stylesheets/index.css" type="text/css">
+    <title>イスコンアド テストページ</title>
+  </head>
+  <body>
+    <div class="container">
+      <div id="topbar">
+        <h1>イスコン Ad</h1>
+      </div>
+
+      <section id="navs">
+        <ul class="nav nav-pills">
+          <li class="active"><a href="/index.html">Manage ads</a></li>
+          <li><a href="/view.html">View test</a></li>
+        </ul>
+      </section>
+
+      <section id="post_tester" class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">Create ad</h2>
+        </div>
+
+        <div class="panel-body">
+          <form id="post_testform" action='#' class="form-horizontal col-md-12">
+            <div class="form-group">
+              <input id="post_form_advertiser" type="text" placeholder="advertiser" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input id="post_form_slot" type="text" placeholder="slot" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input name="title" type="text" placeholder="title" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input name="type" type="text" placeholder="asset content type" value="video/mp4" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input name="destination" type="text" placeholder="http://destination..." class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input name="asset" type="file" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <input value="Post" type="submit" class="btn btn-primary">
+            </div>
+          </form>
+
+          <div id="post_result">
+            <div id="post_result_url"></div>
+            <div id="post_result_data"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="report_tester" class="panel panel-default">
+        <div class="panel-heading">
+          <h2 class="panel-title">Report test</h2>
+        </div>
+
+        <div class="panel-body">
+          <div id="report_testform">
+            <form class="form-inline">
+              <input id="report_form_advertiser" type="text" placeholder="advertiser" class="form-control">
+              <button type="button" class="report_form_show btn btn-primary" data-target="/me/report">Show report</button>
+              <button type="button" class="report_form_show btn btn-primary" data-target="/me/final_report">Show final_report</button>
+            </form>
+          </div>
+
+          <div id="reports">
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </body>
+</html>

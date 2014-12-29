@@ -1,6 +1,7 @@
 # ISUCON4 problems
 
 - [qualifier](./qualifier)
+- [final](./final)
 
 ## License
 

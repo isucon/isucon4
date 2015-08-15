@@ -1,0 +1,6 @@
+.*
+gocode
+benchmarker
+webapp/perl/local
+webapp/go/golang-webapp
+*.pyc

@@ -1,0 +1,46 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  sudo: yes
+  tasks:
+    - user: name=isucon groups=wheel
+    - lineinfile: dest=/etc/sudoers state=present regexp='^%wheel ALL\=' line='%wheel ALL=(ALL) NOPASSWD:ALL' validate='visudo -cf %s'
+    - command: yum update -y
+    - yum: pkg=nginx state=installed
+    - service: name=nginx enabled=true
+    - yum: pkg=mysql-server state=installed
+    - service: name=mysqld state=running enabled=true
+    - yum: pkg=MySQL-python state=installed
+    - copy: src=../files/nginx.conf dest=/etc/nginx/nginx.conf owner=root mode=644
+      notify:
+        - reload nginx
+    - copy: src=../files/nginx.php.conf dest=/etc/nginx/nginx.php.conf owner=root mode=644
+    - name: copy my.cnf
+      copy: src=../files/my.cnf dest=/etc/my.cnf owner=root mode=644
+      notify:
+        - restart mysqld
+    - command: rm -rf /tmp/isucon
+      args:
+        removes: /tmp/isucon
+    - synchronize: src=../../sql dest=/tmp/isucon/ recursive=yes delete=yes
+      sudo: no
+    - synchronize: src=../../webapp dest=/tmp/isucon/ recursive=yes delete=yes
+      sudo: no
+    - copy: src=../../init.sh dest=/tmp/isucon/init.sh owner=isucon mode=755
+    - copy: src=../files/env.sh dest=/tmp/isucon/env.sh owner=isucon mode=755
+    - copy: src=../files/bashrc dest=/home/isucon/.bashrc owner=isucon mode=755
+    - copy: src=../files/rsync_exclude.txt dest=/tmp/rsync_exclude.txt owner=isucon mode=755
+    - command: chown -R isucon:isucon /tmp/isucon
+    - command: rsync -avz --delete --exclude-from=/tmp/rsync_exclude.txt /tmp/isucon/ /home/isucon/
+      sudo: yes
+  post_tasks:
+    - command: ./init.sh
+      sudo_user: isucon
+      args:
+        chdir: /home/isucon
+    - mysql_user: name=isucon password=isucon priv=*.*:ALL state=present
+  handlers:
+    - name: restart mysqld
+      action: service name=mysqld state=restarted
+    - name: reload nginx
+      action: service name=nginx state=restarted

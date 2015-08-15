@@ -1,8 +1,11 @@
 ---
 - hosts: all
-  remote_user: ec2-user
   sudo: yes
   tasks:
+    - yum: name=libselinux-python state=present
+    - selinux: state=disabled
+    - shell: wget http://ftp.riken.jp/Linux/fedora/epel/RPM-GPG-KEY-EPEL-6 && rpm --import RPM-GPG-KEY-EPEL-6 && rm RPM-GPG-KEY-EPEL-6
+    - copy: src=../files/epel.repo dest=/etc/yum.repos.d/epel.repo owner=root mode=755
     - yum: pkg=git state=installed
     - yum: pkg=gcc state=installed
     - yum: pkg=patch state=installed
@@ -16,8 +19,8 @@
     - yum: pkg=libjpeg-turbo-devel state=installed
     - yum: pkg=libpng state=installed
     - yum: pkg=libpng-devel state=installed
-    - yum: pkg=libmcrypt state=installed
-    - yum: pkg=libmcrypt-devel state=installed
+    - yum: pkg=libmcrypt state=installed enablerepo=epel
+    - yum: pkg=libmcrypt-devel state=installed enablerepo=epel
     - yum: pkg=readline state=installed
     - yum: pkg=readline-devel state=installed
     - yum: pkg=libtidy state=installed

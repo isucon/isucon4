@@ -1,24 +1,52 @@
 ---
 - hosts: all
-  remote_user: ec2-user
   sudo: yes
   tasks:
     - user: name=isucon groups=wheel
     - lineinfile: dest=/etc/sudoers state=present regexp='^%wheel ALL\=' line='%wheel ALL=(ALL) NOPASSWD:ALL' validate='visudo -cf %s'
     - command: yum update -y
-    - yum: pkg=nginx state=installed
-    - service: name=nginx enabled=true
-    - yum: pkg=mysql-server state=installed
-    - service: name=mysqld state=running enabled=true
-    - yum: pkg=MySQL-python state=installed
+
+    - yum: pkg=nginx state=installed enablerepo=epel
+    - service: name=nginx state=running enabled=true
     - copy: src=../files/nginx.conf dest=/etc/nginx/nginx.conf owner=root mode=644
       notify:
         - reload nginx
     - copy: src=../files/nginx.php.conf dest=/etc/nginx/nginx.php.conf owner=root mode=644
-    - name: copy my.cnf
-      copy: src=../files/my.cnf dest=/etc/my.cnf owner=root mode=644
+
+    - yum: pkg=mysql55-mysql-server state=installed
+    - file: path=/var/run/mysqld state=directory owner=mysql mode=775
+    - name: copy my.cnf (mysql55-mysqld)
+      copy: src=../files/my.cnf dest=/opt/rh/mysql55/root/etc/my.cnf owner=root mode=644
       notify:
         - restart mysqld
+    # - file: path=/etc/my.cnf src=/opt/rh/mysql55/root/etc/my.cnf state=link
+    - service: name=mysql55-mysqld state=running enabled=true
+
+    - yum: pkg=MySQL-python state=installed
+
+    - file: path=/etc/mysqld/ssl state=directory
+    - shell: openssl genrsa 2048 > /etc/mysqld/ssl/ca-key.pem
+      args:
+        creates: /etc/mysqld/ssl/ca-key.pem
+    - command: openssl req -new -x509 -nodes -subj "/C=JP/ST=Tokyo/L=Chiyoda/CN=ca.isucon.net" -days 3600 -key ca-key.pem -out ca-cert.pem
+      args:
+        chdir: /etc/mysqld/ssl
+        creates: /etc/mysqld/ssl/ca-cert.pem
+    - command: openssl req -newkey rsa:2048 -subj "/C=JP/ST=Tokyo/L=Chiyoda/CN=mysqld.isucon.net" -days 3600 -nodes -keyout server-key.pem -out server-req.pem
+      args:
+        chdir: /etc/mysqld/ssl
+        creates: /etc/mysqld/ssl/server-req.pem
+    - shell: openssl rsa -in server-key.pem -out server-key.pem && touch server-key.decrypted
+      args:
+        chdir: /etc/mysqld/ssl
+        creates: /etc/mysqld/ssl/server-key.decrypted
+    - command: openssl x509 -req -in server-req.pem -days 3600 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 -out server-cert.pem
+      args:
+        chdir: /etc/mysqld/ssl
+        creates: /etc/mysqld/ssl/server-cert.pem
+      notify:
+        - restart mysqld
+
     - command: rm -rf /tmp/isucon
       args:
         removes: /tmp/isucon
@@ -34,13 +62,10 @@
     - command: rsync -avz --delete --exclude-from=/tmp/rsync_exclude.txt /tmp/isucon/ /home/isucon/
       sudo: yes
   post_tasks:
-    - command: ./init.sh
-      sudo_user: isucon
-      args:
-        chdir: /home/isucon
+    - command: sudo su - isucon /home/isucon/init.sh
     - mysql_user: name=isucon password=isucon priv=*.*:ALL state=present
   handlers:
     - name: restart mysqld
-      action: service name=mysqld state=restarted
+      action: service name=mysql55-mysqld state=restarted
     - name: reload nginx
       action: service name=nginx state=restarted

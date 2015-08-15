@@ -1,39 +1,43 @@
 #!/usr/bin/env ruby
 require 'thor'
-require 'aws-sdk'
 require 'logger'
 require 'pathname'
+require 'json'
 
 class CLI < Thor
-  class_option :instance_id, aliases: :i
   class_option :verbose, type: :boolean, default: false
 
   desc 'run_instance', 'Run new instance'
-  option :base_image_id, aliases: :b, default: 'ami-29dc9228' # hvm amazon-linux
-  option :key_name, aliases: :k, required: true
-  option :instance_type, aliases: :t, default: 'm3.xlarge'
-  option :security_groups, aliases: :s, default: %w[default]
-  option :init_file
+  option :project, default: 'isucon5-summer-course'
+  option :name, required: true
+  option :zone, default: 'asia-east1-b'
+  option :machine_type, default: 'n1-standard-4'
+  option :network, default: 'default'
+  option :maintenance_policy, default: 'TERMINATE'
+  option :scopes, default: ['https://www.googleapis.com/auth/devstorage.read_only', 'https://www.googleapis.com/auth/logging.write']
+  option :tags, default: ['http-server']
+  option :image, default: 'https://www.googleapis.com/compute/v1/projects/centos-cloud/global/images/centos-6-v20150710'
+  option :boot_disk_size, default: 10
+  option :boot_disk_type, default: 'pd-standard'
+  option :boot_disk_device_name, default: 'image0'
   def run_instance
-    user_data = ''
-    user_data = File.open(options[:init_file]).read if options[:init_file]
-    args = {
-      image_id: options[:base_image_id],
-      instance_type: options[:instance_type],
-      key_name: options[:key_name],
-      security_groups: options[:security_groups],
-      user_data: user_data
-    }
-    instance = ec2.instances.create args
-    instance_id_path.open('w') {|f| f.write instance.id }
-    instance.tags['Name'] = "isucon4-pack-#{Time.now.to_i}"
-    say_status 'run_instance', instance.id
+    args = options.merge({
+      no_restart_on_failure: nil,
+      no_boot_disk_auto_delete: nil,
+    })
+    project = args.delete(:project)
+    name = args.delete(:name)
+
+    args.delete(:verbose)
+
+    instance = create_instance(project: project, name: name, args: args)
+    instance_info_path.open('w') {|f| f.write instance.to_json }
+    say_status 'run_instance', instance["name"]
   end
 
   desc 'provision', 'Provision the instance using ansible'
   def provision
     playbooks = Dir.glob('ansible/*.yml').reject{|x| x=~%r!/_[^/]+\.yml$! }.sort
-
     run_playbooks playbooks
   end
 
@@ -50,20 +54,24 @@ class CLI < Thor
 
   desc 'spec', 'Test the instance using serverspec'
   def spec
-    command = "TARGET_HOST=#{public_ip_address} bundle exec rspec"
+    # ssh -i KEY_FILE -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no USER@IP_ADDRESS
+    #  ~/.ssh/google_compute_engine
+    command = "TARGET_HOST=#{public_ip_address} PRIVATE_KEY_PATH=~/.ssh/google_compute_engine bundle exec rspec"
     say_status 'run', command
     system command
   end
 
   desc 'start', 'Start the instance'
   def start
-    id = instance_id
+    raise NotImplementedError
+    instance = instance_info
     ec2.instances[id].start
     say_status 'start', id
   end
 
   desc 'stop', 'Stop the instance'
   def stop
+    raise NotImplementedError
     id = instance_id
     ec2.instances[id].stop
     say_status 'stop', id
@@ -71,6 +79,7 @@ class CLI < Thor
 
   desc 'terminate', 'Terminate the instance'
   def terminate
+    raise NotImplementedError
     id = instance_id
     ec2.instances[id].terminate
     instance_id_path.delete
@@ -79,17 +88,27 @@ class CLI < Thor
 
   desc 'create_image', 'Create AMI from the instance'
   def create_image
-    now = Time.now
-    name = "2014-qualifier-#{now.to_i}"
-    desc = "Built #{now.to_s}"
-    image = ec2.instances[instance_id].create_image(name, description: desc, no_reboot: true)
-    say_status 'create_image', image.id
+    raise NotImplementedError
+    # Do it by yourself...
+    # https://cloud.google.com/compute/docs/images#export_an_image_to_google_cloud_storage
+
+    # gcloud compute disks create temporary-disk --zone ZONE
+    # gcloud compute instances attach-disk example-instance --disk temporary-disk \
+    #     --device-name temporary-disk \
+    #     --zone ZONE
+    # gcloud compute ssh example-instance
+    # $ sudo mkdir /mnt/tmp
+    # $ sudo /usr/share/google/safe_format_and_mount -m "mkfs.ext4 -F" /dev/sdb /mnt/tmp
+    # $ sudo gcimagebundle -d /dev/sda -o /mnt/tmp/ --log_file=/tmp/abc.log
+    # $ gsutil mb gs://BUCKET_NAM
+    # $ gsutil cp /mnt/tmp/IMAGE_NAME.image.tar.gz gs://BUCKET_NAME
   end
 
   desc 'ssh', 'Login the instance via ssh'
-  option :user, aliases: :u, default: 'ec2-user'
   def ssh
-    command = "ssh #{options[:user]}@#{public_ip_address}"
+    # gcloud compute --project "isucon5-summer-course" ssh --zone "asia-east1-b" "image-test"
+    instance = instance_info
+    command = ['gcloud', 'compute', '--project', instance['project'], 'ssh', '--zone', instance['zone'], instance['name']].join(' ')
     say_status 'exec', command
     exec command
   end
@@ -101,61 +120,119 @@ class CLI < Thor
       dir
     end
 
-    def instance_id_path
-      tmpdir.join('instance_id')
+    def instance_info_path
+      tmpdir.join('instance_info')
     end
 
-    def instance_id
-      @instance_id ||= begin
-        id = options[:instance_id] || instance_id_path.read.chomp
-        if id !~ /^i-\w+$/
-          abort "Invalid instance id: '#{id}'"
-        end
-        id
+    def instance_info
+      @instance_info ||= begin
+        JSON.parse(instance_info_path.read)
       end
     rescue Errno::ENOENT
-      abort "#{instance_id_path} doesn't exist"
+      abort "#{instance_info_path} doesn't exist"
     end
 
-    def ec2
-      @ec2 ||= begin
-        logger = options[:verbose] ? Logger.new($stdout).tap{|l| l.level = Logger::DEBUG } : nil
-        AWS::EC2.new(
-          access_key_id: ENV['AWS_ACCESS_KEY_ID'],
-          secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
-          logger: logger
-        )
+    def create_instance(project:, name:, args: {})
+      cmd = ['gcloud', '--format', 'json', 'compute', '--project', project, 'instances', 'create', name]
+      cmd += build_cli_options(args)
+
+      io = IO.popen(cmd)
+      instance = JSON.parse(io.read).first rescue nil
+      unless instance
+        raise "failed to create instance"
       end
+
+      example = {
+        "canIpForward": false,
+        "cpuPlatform": "Intel Ivy Bridge",
+        "creationTimestamp": "2015-08-14T22:59:02.111-07:00",
+        "disks": [
+          { "boot": true, "deviceName": "image0", "index": 0, "interface": "SCSI", "kind": "compute#attachedDisk",
+            "mode": "READ_WRITE", "source": "image-test4", "type": "PERSISTENT" }
+        ],
+        "id": "17839858961528212297",
+        "kind": "compute#instance",
+        "machineType": "n1-standard-4",
+        "metadata": {"fingerprint": "3d2QLXihB6g=", "kind": "compute#metadata"},
+        "name": "image-test4",
+        "networkInterfaces": [
+          { "accessConfigs": [
+              { "kind": "compute#accessConfig", "name": "external-nat", "natIP": "130.211.253.182", "type": "ONE_TO_ONE_NAT" }
+            ],
+            "name": "nic0",
+            "network": "default",
+            "networkIP": "10.240.164.226"
+          }
+        ],
+        "scheduling": { "automaticRestart": false, "onHostMaintenance": "TERMINATE", "preemptible": false },
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/isucon5-summer-course/zones/asia-east1-b/instances/image-test4",
+        "serviceAccounts": [
+          {
+            "email": "338645772293-compute@developer.gserviceaccount.com",
+            "scopes": [
+              "https://www.googleapis.com/auth/devstorage.read_only",
+              "https://www.googleapis.com/auth/logging.write"
+            ]
+          }
+        ],
+        "status": "RUNNING",
+        "tags": {
+          "fingerprint": "FYLDgkTKlA4=",
+          "items": [
+            "http-server"
+          ]
+        },
+        "zone": "asia-east1-b"
+      }
+
+      create_http_firewall_rule(project: project, name: instance["networkInterfaces"].first["name"], target_tag: instance["tags"]["items"].first)
+
+      instance.merge({'project' => project})
     end
 
-    def wait_for_start
-      loop do
-        id = instance_id
-        result = ec2.client.describe_instance_status(instance_ids: [id])
-        status_set = result[:instance_status_set].first
-        instance_status = status_set[:instance_status][:status] rescue nil
-        system_status = status_set[:system_status][:status] rescue nil
-        say_status 'checking', "status(#{id}) #{system_status} / #{instance_status}"
-        break if instance_status == 'ok' && system_status == 'ok'
-        sleep 3
+    def create_http_firewall_rule(project:, name:, target_tag:)
+      list = ['gcloud', '--format', 'json', 'compute', '--project', project, 'firewall-rules', 'list']
+      JSON.parse(IO.popen(list).read).each do |rule|
+        return if rule["name"] == name
       end
+
+      cmd = ['gcloud', '--format', 'json', 'compute', '--project', project, 'firewall-rules', 'create', name]
+      cmd += ['--allow', 'tcp:80', '--network', 'default', '--source-ranges', '0.0.0.0/0', '--target-tags', target_tag]
+
+      JSON.parse(IO.popen(cmd).read)
+    end
+
+    def build_cli_options(args)
+      options = []
+      args.each do |key, value|
+        options << '--' + key.to_s.gsub(/_/, '-')
+        if value
+          if value.is_a? Array
+            options << value.map(&:to_s).join(',')
+          else
+            options << value.to_s
+          end
+        end
+      end
+      options
     end
 
     def public_ip_address
       @public_ip_address ||= begin
-        wait_for_start
-        instance = ec2.instances[instance_id]
-        instance.public_ip_address
+        instance_info['networkInterfaces'][0]["accessConfigs"][0]["natIP"]
       end
     end
 
     def run_playbooks(playbooks)
+      # ssh -i KEY_FILE -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no USER@IP_ADDRESS
+      #  ~/.ssh/google_compute_engine
       playbooks = [playbooks] unless playbooks.is_a?(Array)
       opts = "-i '#{public_ip_address},'"
-      opts += " --verbose" if options[:verbose]
+      opts += " --private-key=$HOME/.ssh/google_compute_engine"
+      opts += " --verbose -vvvv" if options[:verbose]
       command = "ansible-playbook #{opts} #{playbooks.join(' ')}"
       say_status 'run', command
-      system command
+      system({'ANSIBLE_HOST_KEY_CHECKING' => 'False'}, command)
     end
   end
 end

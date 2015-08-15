@@ -1,11 +1,12 @@
 ---
 - hosts: all
-  remote_user: ec2-user
   sudo: yes
   tasks:
     - yum: pkg=git state=installed
     - yum: pkg=mercurial state=installed
     - yum: pkg=bzr state=installed
+    - yum: pkg=ruby state=installed
+    - yum: pkg=rubygems state=installed
     - command: "curl -L -O  http://golang.org/dl/go1.3.linux-amd64.tar.gz"
       args:
         chdir: /tmp

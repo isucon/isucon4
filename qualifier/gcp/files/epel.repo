@@ -1,0 +1,5 @@
+[epel]
+name=EPEL RPM Repository for Red Hat Enterprise Linux
+baseurl=http://ftp.riken.jp/Linux/fedora/epel/6/$basearch/
+gpgcheck=1
+enabled=0

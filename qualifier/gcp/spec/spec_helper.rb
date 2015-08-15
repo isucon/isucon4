@@ -1,5 +1,4 @@
 require 'serverspec'
-require 'net/ssh'
 
 set :backend, :ssh
 
@@ -15,9 +14,10 @@ else
 end
 
 host = ENV['TARGET_HOST']
+key = ENV['PRIVATE_KEY_PATH']
 
 set :host,        host
-set :ssh_options, user: 'ec2-user'
+set :ssh_options, keys: [key], user_known_hosts_file: '/dev/null'
 
 Specinfra.configuration.request_pty = true
 
@@ -25,7 +25,7 @@ Specinfra.configuration.request_pty = true
 # set :disable_sudo, true
 
 # Set environment variables
-# set :env, :LANG => 'C', :LC_MESSAGES => 'C' 
+# set :env, :LANG => 'C', :LC_MESSAGES => 'C'
 
 # Set PATH
 # set :path, '/sbin:/usr/local/sbin:$PATH'

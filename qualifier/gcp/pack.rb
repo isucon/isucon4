@@ -6,6 +6,7 @@ require 'json'
 
 class CLI < Thor
   class_option :verbose, type: :boolean, default: false
+  class_option :ssh_key, type: :string, default: File.expand_path('~/.ssh/google_compute_engine')
 
   desc 'run_instance', 'Run new instance'
   option :project, default: 'isucon5-summer-course'
@@ -29,6 +30,7 @@ class CLI < Thor
     name = args.delete(:name)
 
     args.delete(:verbose)
+    args.delete(:ssh_key)
 
     instance = create_instance(project: project, name: name, args: args)
     instance_info_path.open('w') {|f| f.write instance.to_json }
@@ -56,9 +58,9 @@ class CLI < Thor
   def spec
     # ssh -i KEY_FILE -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no USER@IP_ADDRESS
     #  ~/.ssh/google_compute_engine
-    command = "TARGET_HOST=#{public_ip_address} PRIVATE_KEY_PATH=~/.ssh/google_compute_engine bundle exec rspec"
-    say_status 'run', command
-    system command
+    say_status 'run', "TARGET_HOST=#{public_ip_address} PRIVATE_KEY_PATH=#{options[:ssh_key]} bundle exec rspec"
+    system({'TARGET_HOST' => public_ip_address, 'PRIVATE_KEY_PATH' => options[:ssh_key]}, *%w(bundle exec rspec))
+    exit $?.exitstatus || 254
   end
 
   desc 'start', 'Start the instance'
@@ -228,7 +230,7 @@ class CLI < Thor
       #  ~/.ssh/google_compute_engine
       playbooks = [playbooks] unless playbooks.is_a?(Array)
       opts = "-i '#{public_ip_address},'"
-      opts += " --private-key=$HOME/.ssh/google_compute_engine"
+      opts += " --private-key=#{options[:ssh_key]}"
       opts += " --verbose -vvvv" if options[:verbose]
       command = "ansible-playbook #{opts} #{playbooks.join(' ')}"
       say_status 'run', command

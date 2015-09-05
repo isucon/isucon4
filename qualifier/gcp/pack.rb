@@ -15,7 +15,7 @@ class CLI < Thor
   option :machine_type, default: 'n1-standard-4'
   option :network, default: 'default'
   option :maintenance_policy, default: 'TERMINATE'
-  option :scopes, default: ['https://www.googleapis.com/auth/devstorage.read_only', 'https://www.googleapis.com/auth/logging.write']
+  option :scopes, default: ['https://www.googleapis.com/auth/devstorage.read_write', 'https://www.googleapis.com/auth/logging.write']
   option :tags, default: ['http-server']
   option :image, default: 'https://www.googleapis.com/compute/v1/projects/centos-cloud/global/images/centos-6-v20150710'
   option :boot_disk_size, default: 10

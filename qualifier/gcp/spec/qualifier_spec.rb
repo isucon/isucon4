@@ -60,7 +60,7 @@ describe 'supervisor' do
 end
 
 describe 'mysql' do
-  describe package('mysql-server') do
+  describe package('mysql55-mysql-server') do
     it { should be_installed }
   end
 

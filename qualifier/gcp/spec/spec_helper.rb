@@ -17,7 +17,7 @@ host = ENV['TARGET_HOST']
 key = ENV['PRIVATE_KEY_PATH']
 
 set :host,        host
-set :ssh_options, keys: [key], user_known_hosts_file: '/dev/null'
+set :ssh_options, user: ENV['USER'], keys: [key], user_known_hosts_file: '/dev/null'
 
 Specinfra.configuration.request_pty = true
 

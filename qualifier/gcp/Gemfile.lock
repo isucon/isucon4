@@ -42,3 +42,6 @@ PLATFORMS
 DEPENDENCIES
   serverspec
   thor (~> 0.19)
+
+BUNDLED WITH
+   1.10.3

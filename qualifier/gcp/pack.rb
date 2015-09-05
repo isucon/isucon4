@@ -9,7 +9,7 @@ class CLI < Thor
   class_option :ssh_key, type: :string, default: File.expand_path('~/.ssh/google_compute_engine')
 
   desc 'run_instance', 'Run new instance'
-  option :project, default: 'isucon5-summer-course'
+  option :project, required: true
   option :name, required: true
   option :zone, default: 'asia-east1-b'
   option :machine_type, default: 'n1-standard-4'

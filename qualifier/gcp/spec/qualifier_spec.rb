@@ -98,3 +98,9 @@ end
 describe file('/etc/nginx/nginx.php.conf') do
   it { should contain 'mime.type' }
 end
+
+describe "selinux" do
+  describe command('sestatus') do
+    its(:stdout) { should contain('disabled') }
+  end
+end

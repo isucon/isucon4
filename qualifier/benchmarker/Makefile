@@ -8,7 +8,8 @@ LD_FLAGS = \
 	-X github.com/isucon/isucon4/qualifier/benchmarker/user.DummyUsersTSVMD5 \"${DUTMH}\" \
 	-X github.com/isucon/isucon4/qualifier/benchmarker/user.DummyUsersUsedTSVMD5 \"${DUUTMH}\" \
 	-X github.com/isucon/isucon4/qualifier/benchmarker/user.DebugMode \"${debugmode}\" \
-	-X main.DebugMode \"${debugmode}\"
+	-X main.DebugMode \"${debugmode}\" \
+	-X main.SkipMetadataMode \"${skipmetadata}\"
 
 ifeq ($(filter true false,${debugmode}),)
   $(error debugmode should be true or false)
@@ -41,5 +42,13 @@ release: benchmarker
 	@echo -n '* '
 	@tput sgr0
 	@echo "Built for release."
+
+release-nometadata: skipmetadata=true
+release-nometadata: debugmode=false
+release-nometadata: benchmarker
+	@tput setaf 2
+	@echo -n '* '
+	@tput sgr0
+	@echo "Built for release, without metadata check."
 
 .PHONEY: test release deps

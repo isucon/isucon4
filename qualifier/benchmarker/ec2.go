@@ -43,7 +43,7 @@ func getCpuInfo() string {
 }
 
 func checkInstanceMetadata() {
-	if Debug {
+	if Debug || SkipMetadata {
 		instanceType = "local-machine"
 		instanceId = ""
 		amiId = ""
@@ -55,7 +55,7 @@ func checkInstanceMetadata() {
 		cpuInfo = getCpuInfo()
 	}
 
-	if !Debug && instanceType != ExpectedInstanceType {
+	if !(Debug || SkipMetadata) && instanceType != ExpectedInstanceType {
 		logger.Printf("type:fail\treason:Instance type is miss match: %s, got: %s", ExpectedInstanceType, instanceType)
 		os.Exit(1)
 	}

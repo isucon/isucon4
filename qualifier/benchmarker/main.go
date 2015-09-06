@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	GIT_COMMIT string
-	DebugMode  string
+	GIT_COMMIT       string
+	DebugMode        string
+	SkipMetadataMode string
 )
 
 const (
@@ -27,14 +28,16 @@ const (
 )
 
 var (
-	app         *cli.App
-	logger      *log.Logger
-	Debug       = false
-	defaultInit string
+	app          *cli.App
+	logger       *log.Logger
+	Debug        = false
+	SkipMetadata = false
+	defaultInit  string
 )
 
 func init() {
 	Debug = DebugMode == "true"
+	SkipMetadata = SkipMetadataMode == "true"
 
 	logger = log.New(os.Stdout, "", 0)
 	logger.SetFlags(log.Ltime)

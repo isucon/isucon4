@@ -9,5 +9,5 @@
       sudo: no
     - command: chown -R isucon:isucon /tmp/benchmarker
     - name: build benchmarker
-      command: su - isucon bash -c 'cd /tmp/benchmarker; /home/isucon/env.sh make release'
+      command: su - isucon bash -c 'cd /tmp/benchmarker; /home/isucon/env.sh make release-nometadata'
     - command: su - isucon bash -c 'mv /tmp/benchmarker/benchmarker /home/isucon/'

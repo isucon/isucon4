@@ -4,7 +4,7 @@
 
 ## Images (built by @sorah)
 
-- `gs://shirokanezoo/isucon4/qualifier/image.tar.gz`
+- `gs://shirokanezoo/isucon4/qualifier/v3.tar.gz`
   - No warranty and @sorah doesn't provide any supports.
 
 ## Image creation

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	redis "gopkg.in/redis.v3"
@@ -20,12 +21,15 @@ var (
 )
 
 var rd *redis.Client
+var mu *sync.Mutex
 
 func init() {
 	rd = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 		DB:   0,
 	})
+
+	mu = new(sync.Mutex)
 }
 
 func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
@@ -39,6 +43,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
 
+		mu.Lock()
 		if succeeded {
 			resetUserFailCount(user.ID)
 			resetIpFailCount(remoteAddr)
@@ -46,6 +51,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 			incrUserFailCount(user.ID)
 			incrIpFailCount(remoteAddr)
 		}
+		mu.Unlock()
 	}
 
 	_, err := db.Exec(
@@ -192,13 +198,17 @@ func attemptLogin(req *http.Request) (*User, error) {
 		return nil, err
 	}
 
+	mu.Lock()
 	if banned, _ := isBannedIP2(remoteAddr); banned {
+		mu.Unlock()
 		return nil, ErrBannedIP
 	}
 
 	if locked, _ := isLockedUser2(user); locked {
+		mu.Unlock()
 		return nil, ErrLockedUser
 	}
+	mu.Unlock()
 
 	if user == nil {
 		return nil, ErrUserNotFound

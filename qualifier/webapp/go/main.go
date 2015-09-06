@@ -58,6 +58,7 @@ func init() {
 }
 
 func main() {
+	resetRedis()
 	m := martini.Classic()
 
 	store := sessions.NewCookieStore([]byte("secret-isucon"))

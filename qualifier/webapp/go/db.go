@@ -3,8 +3,13 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
+
+	redis "gopkg.in/redis.v3"
 )
 
 var (
@@ -13,6 +18,15 @@ var (
 	ErrUserNotFound  = errors.New("Not found user")
 	ErrWrongPassword = errors.New("Wrong password")
 )
+
+var rd *redis.Client
+
+func init() {
+	rd = redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+		DB:   0,
+	})
+}
 
 func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
 	succ := 0
@@ -24,6 +38,12 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
+
+		if succeeded {
+			resetUserFailCount(user.ID)
+		} else {
+			incrUserFailCount(user.ID)
+		}
 	}
 
 	_, err := db.Exec(
@@ -57,6 +77,39 @@ func isLockedUser(user *User) (bool, error) {
 	}
 
 	return UserLockThreshold <= int(ni.Int64), nil
+}
+
+func isLockedUser2(user *User) (bool, error) {
+	if user == nil {
+		return false, nil
+	}
+
+	val, err := rd.Get(userFailCountKey(user.ID)).Result()
+	if err == redis.Nil {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		log.Fatal(err.Error())
+		return false, err
+	}
+
+	return UserLockThreshold <= i, nil
+}
+
+func userFailCountKey(userID int) string {
+	return fmt.Sprintf("user_fail_count_%d", userID)
+}
+
+func resetUserFailCount(userID int) {
+	rd.Set(userFailCountKey(userID), 0, 0)
+}
+
+func incrUserFailCount(userID int) {
+	rd.Incr(userFailCountKey(userID))
 }
 
 func isBannedIP(ip string) (bool, error) {
@@ -112,7 +165,7 @@ func attemptLogin(req *http.Request) (*User, error) {
 		return nil, ErrBannedIP
 	}
 
-	if locked, _ := isLockedUser(user); locked {
+	if locked, _ := isLockedUser2(user); locked {
 		return nil, ErrLockedUser
 	}
 
@@ -275,4 +328,42 @@ func lockedUsers() []string {
 	}
 
 	return userIds
+}
+
+func resetRedis() {
+	log.Printf("initializing redis")
+	rd.FlushAll()
+
+	rows, err := db.Query("SELECT user_id, ip, succeeded FROM login_log ORDER BY id ASC")
+
+	multi := rd.Multi()
+	defer func() {
+		multi.Close()
+	}()
+
+	_, err = multi.Exec(func() error {
+		for rows.Next() {
+			var userId int
+			var ip string
+			var succeeded int
+
+			if err := rows.Scan(&userId, &ip, &succeeded); err != nil {
+				return err
+			}
+
+			//log.Printf("userId:%d, ip:%s, succeeded:%d", userId, ip, succeeded)
+
+			if succeeded > 0 {
+				multi.Set(userFailCountKey(userId), 0, 0)
+			} else {
+				multi.Incr(userFailCountKey(userId))
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		panic(err.Error())
+	}
+	log.Printf("done initializing redis")
 }

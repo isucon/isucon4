@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 )
 
@@ -20,18 +19,7 @@ const (
 )
 
 func getMetaData(key string) string {
-	res, err := http.Get(infoEndpoint + "/latest/meta-data/" + key)
-	if err != nil {
-		logger.Printf("type:fail\treason:meta-data error: %v", err)
-		os.Exit(1)
-	}
-	if res.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(res.Body)
-		return string(data)
-	}
-	logger.Printf("type:fail\treason:meta-data error: %v", err)
-	os.Exit(1)
-	return ""
+	return "m3.xlarge"
 }
 
 func getCpuInfo() string {

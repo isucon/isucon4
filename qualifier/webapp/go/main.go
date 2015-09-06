@@ -2,13 +2,20 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	"net/http"
-	"strconv"
 )
 
 var db *sql.DB
@@ -16,6 +23,9 @@ var (
 	UserLockThreshold int
 	IPBanThreshold    int
 )
+
+// グローバル変数にしておく
+var port = flag.Uint("port", 0, "port to listen")
 
 func init() {
 	dsn := fmt.Sprintf(
@@ -43,6 +53,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	flag.Parse()
 }
 
 func main() {
@@ -103,5 +115,35 @@ func main() {
 		})
 	})
 
-	http.ListenAndServe(":8080", m)
+	sigchan := make(chan os.Signal)
+	signal.Notify(sigchan, syscall.SIGTERM)
+	signal.Notify(sigchan, syscall.SIGINT)
+
+	var l net.Listener
+	var err error
+	sock := "/dev/shm/server.sock"
+	if *port == 0 {
+		ferr := os.Remove(sock)
+		if ferr != nil {
+			if !os.IsNotExist(ferr) {
+				panic(ferr.Error())
+			}
+		}
+		l, err = net.Listen("unix", sock)
+		cerr := os.Chmod(sock, 0666)
+		if cerr != nil {
+			panic(cerr.Error())
+		}
+	} else {
+		l, err = net.ListenTCP("tcp", &net.TCPAddr{Port: int(*port)})
+	}
+	if err != nil {
+		panic(err.Error())
+	}
+	go func() {
+		// func Serve(l net.Listener, handler Handler) error
+		log.Println(http.Serve(l, m))
+	}()
+
+	<-sigchan
 }

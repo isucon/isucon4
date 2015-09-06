@@ -41,8 +41,10 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 
 		if succeeded {
 			resetUserFailCount(user.ID)
+			resetIpFailCount(remoteAddr)
 		} else {
 			incrUserFailCount(user.ID)
+			incrIpFailCount(remoteAddr)
 		}
 	}
 
@@ -132,6 +134,35 @@ func isBannedIP(ip string) (bool, error) {
 	return IPBanThreshold <= int(ni.Int64), nil
 }
 
+func isBannedIP2(ip string) (bool, error) {
+	val, err := rd.Get(ipFailCountKey(ip)).Result()
+	if err == redis.Nil {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		log.Fatal(err.Error())
+		return false, err
+	}
+
+	return IPBanThreshold <= i, nil
+}
+
+func resetIpFailCount(ip string) {
+	rd.Set(ipFailCountKey(ip), 0, 0)
+}
+
+func incrIpFailCount(ip string) {
+	rd.Incr(ipFailCountKey(ip))
+}
+
+func ipFailCountKey(ip string) string {
+	return fmt.Sprintf("ip_fail_count_%s", ip)
+}
+
 func attemptLogin(req *http.Request) (*User, error) {
 	succeeded := false
 	user := &User{}
@@ -161,7 +192,7 @@ func attemptLogin(req *http.Request) (*User, error) {
 		return nil, err
 	}
 
-	if banned, _ := isBannedIP(remoteAddr); banned {
+	if banned, _ := isBannedIP2(remoteAddr); banned {
 		return nil, ErrBannedIP
 	}
 
@@ -355,8 +386,10 @@ func resetRedis() {
 
 			if succeeded > 0 {
 				multi.Set(userFailCountKey(userId), 0, 0)
+				multi.Set(ipFailCountKey(ip), 0, 0)
 			} else {
 				multi.Incr(userFailCountKey(userId))
+				multi.Incr(ipFailCountKey(ip))
 			}
 		}
 		return nil

@@ -58,6 +58,7 @@ func init() {
 }
 
 func main() {
+	resetRedis()
 	m := martini.Classic()
 
 	store := sessions.NewCookieStore([]byte("secret-isucon"))
@@ -67,6 +68,10 @@ func main() {
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
 	}))
+
+	m.Get("/_init", func(r render.Render, session sessions.Session) {
+		resetRedis()
+	})
 
 	m.Get("/", func(r render.Render, session sessions.Session) {
 		r.HTML(200, "index", map[string]string{"Flash": getFlash(session, "notice")})

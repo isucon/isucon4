@@ -58,7 +58,6 @@ func init() {
 }
 
 func main() {
-	resetRedis()
 	m := martini.Classic()
 
 	store := sessions.NewCookieStore([]byte("secret-isucon"))
@@ -124,7 +123,7 @@ func main() {
 	signal.Notify(sigchan, syscall.SIGTERM)
 	signal.Notify(sigchan, syscall.SIGINT)
 
-	var l net.Listener
+	var l,l2 net.Listener
 	var err error
 	sock := "/dev/shm/server.sock"
 	if *port == 0 {
@@ -145,9 +144,17 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+	l2, err = net.ListenTCP("tcp", &net.TCPAddr{Port: 8888})
+	if err != nil {
+		panic(err.Error())
+	}
 	go func() {
 		// func Serve(l net.Listener, handler Handler) error
 		log.Println(http.Serve(l, m))
+	}()
+	go func() {
+		// func Serve(l net.Listener, handler Handler) error
+		log.Println(http.Serve(l2, m))
 	}()
 
 	<-sigchan

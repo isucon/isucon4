@@ -1,0 +1,5 @@
+[mysqld]
+character-set-server=utf8mb4
+
+sql_mode=NO_ENGINE_SUBSTITUTION
+max_allowed_packet = 100M

@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
-	"github.com/moovweb/gokogiri"
-	"github.com/moovweb/gokogiri/html"
-	"github.com/moovweb/gokogiri/xml"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
+	"github.com/moovweb/gokogiri"
+	"github.com/moovweb/gokogiri/html"
+	"github.com/moovweb/gokogiri/xml"
 )
 
 const (

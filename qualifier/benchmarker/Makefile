@@ -17,17 +17,13 @@ endif
 
 
 test:
-	gondler test -v ./...
+	@go test -v ./...
 
 benchmarker: deps user/dummy_users.go
-	gondler build -ldflags "${LD_FLAGS}"
+	@go build -ldflags "${LD_FLAGS}"
 
-./.gondler: Gomfile
-	@echo "--> Installing build dependencies"
-	gondler install
-	touch .gondler
-
-deps: Gomfile ./.gondler
+deps:
+	@go mod download
 
 debug: debugmode=true
 debug: benchmarker

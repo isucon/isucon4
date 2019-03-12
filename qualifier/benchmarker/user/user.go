@@ -1,10 +1,11 @@
 package user
 
 import (
-	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
 )
 
 type User struct {

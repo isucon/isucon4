@@ -3,14 +3,15 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
-	"github.com/isucon/isucon4/qualifier/benchmarker/user"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
 	"sync/atomic"
 	"time"
+
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/user"
 )
 
 const (

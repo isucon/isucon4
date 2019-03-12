@@ -1,10 +1,11 @@
 package worker
 
 import (
-	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
-	"github.com/isucon/isucon4/qualifier/benchmarker/user"
 	"math/rand"
 	"time"
+
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/user"
 )
 
 var defaultExpectedAssets = map[string]string{

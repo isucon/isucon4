@@ -1,11 +1,12 @@
 package worker
 
 import (
-	"github.com/isucon/isucon4/qualifier/benchmarker/ip"
-	"github.com/isucon/isucon4/qualifier/benchmarker/user"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/user"
 )
 
 func (w *Worker) Work() {
@@ -37,7 +38,7 @@ func (w *Worker) Work() {
 			user.Start()
 			w.Login(ip, user)
 
-			if ! w.Running {
+			if !w.Running {
 				user.FlagIncomplete()
 				ip.FlagIncomplete()
 			}

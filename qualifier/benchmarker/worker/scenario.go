@@ -52,7 +52,6 @@ func NewScenario(method, path string) *Scenario {
 			Headers:    map[string]string{},
 			Selectors:  []string{},
 			Assets:     map[string]string{},
-			Checksum:   "",
 		},
 		ExpectedStatusCode: 200,
 		ExpectedHeaders:    map[string]string{},

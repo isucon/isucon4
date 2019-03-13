@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
 	"github.com/KentaKudo/isucon4/qualifier/benchmarker/scenario"
@@ -31,15 +30,8 @@ type Scenario struct {
 	PostData map[string]string
 	Headers  map[string]string
 
-	Expectation           scenario.Expectation
-	ExpectedStatusCode    int
-	ExpectedLocation      string
-	ExpectedHeaders       map[string]string
-	ExpectedSelectors     []string
-	ExpectedAssets        map[string]string
-	ExpectedHTML          map[string]string
-	ExpectedLastLoginedAt time.Time
-	ExpectedChecksum      string
+	Expectation    scenario.Expectation
+	ExpectedAssets map[string]string
 }
 
 func NewScenario(method, path string) *Scenario {
@@ -53,11 +45,7 @@ func NewScenario(method, path string) *Scenario {
 			Selectors:  []string{},
 			Assets:     map[string]string{},
 		},
-		ExpectedStatusCode: 200,
-		ExpectedHeaders:    map[string]string{},
-		ExpectedSelectors:  []string{},
-		ExpectedAssets:     map[string]string{},
-		ExpectedChecksum:   "",
+		ExpectedAssets: map[string]string{},
 	}
 }
 
@@ -93,21 +81,6 @@ func (s *Scenario) Play(w *Worker) error {
 		return w.Fail(res.Request, err)
 	}
 
-	if res.StatusCode != s.ExpectedStatusCode {
-		return w.Fail(res.Request, fmt.Errorf("Response code should be %d, got %d", s.ExpectedStatusCode, res.StatusCode))
-	}
-
-	if s.ExpectedLocation != "" {
-		if s.ExpectedLocation != res.Request.URL.Path {
-			return w.Fail(
-				res.Request,
-				fmt.Errorf(
-					"Expected location is miss match %s, got: %s",
-					s.ExpectedLocation, res.Request.URL.Path,
-				))
-		}
-	}
-
 	body, _ := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 
@@ -116,71 +89,6 @@ func (s *Scenario) Play(w *Worker) error {
 
 	if err != nil {
 		return w.Fail(res.Request, fmt.Errorf("Invalid html document"))
-	}
-
-	for header, value := range s.ExpectedHeaders {
-		respHeader := res.Header.Get(header)
-		if respHeader != value {
-			return w.Fail(res.Request, fmt.Errorf("Expected header is miss match: %s, got %s", respHeader, value))
-		}
-	}
-
-	for _, selector := range s.ExpectedSelectors {
-		nodes, err := doc.Search(selector)
-		if err != nil {
-			return w.Fail(res.Request, fmt.Errorf("node search error"))
-		}
-
-		if len(nodes) == 0 {
-			return w.Fail(res.Request, fmt.Errorf("Expected selector is not found: %s", selector))
-		}
-	}
-
-	for selector, innerHTML := range s.ExpectedHTML {
-		nodes, err := doc.Search(selector)
-		if err != nil {
-			return w.Fail(res.Request, fmt.Errorf("node search error"))
-		}
-
-		if len(nodes) == 0 {
-			return w.Fail(res.Request, fmt.Errorf("Expected selector is not found: %s", selector))
-		}
-
-		if nodes[0].InnerHtml() != innerHTML {
-			return w.Fail(res.Request, fmt.Errorf(
-				"Expected html text is match: %s, got %s",
-				innerHTML, nodes[0].InnerHtml(),
-			))
-		}
-	}
-
-	if !s.ExpectedLastLoginedAt.IsZero() {
-		selector := "//*[@id='last-logined-at']"
-		nodes, err := doc.Search(selector)
-		if err != nil {
-			return w.Fail(res.Request, fmt.Errorf("node search error"))
-		}
-
-		if len(nodes) == 0 {
-			return w.Fail(res.Request, fmt.Errorf("Expected selector is not found: %s", selector))
-		}
-
-		parsedTime, err := time.ParseInLocation(
-			"2006-01-02 15:04:05", nodes[0].InnerHtml(), time.Local,
-		)
-
-		if err != nil {
-			return w.Fail(res.Request, fmt.Errorf("Parse time error: %s", err))
-		}
-
-		if s.ExpectedLastLoginedAt.Add(1*time.Second).Before(parsedTime) &&
-			s.ExpectedLastLoginedAt.Add(-1*time.Second).After(parsedTime) {
-			return w.Fail(res.Request, fmt.Errorf(
-				"Expected last logined time is match: %s, got %s",
-				s.ExpectedLastLoginedAt.Format("2006-01-02 15:04:05"),
-				nodes[0].InnerHtml(),
-			))
-		}
 	}
 
 	s.CheckAssets(w, doc)

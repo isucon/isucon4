@@ -1,4 +1,4 @@
-package worker
+package scenario
 
 import (
 	"net/http"

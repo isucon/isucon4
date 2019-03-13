@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
+	"github.com/KentaKudo/isucon4/qualifier/benchmarker/scenario"
 	"github.com/moovweb/gokogiri"
 	"github.com/moovweb/gokogiri/html"
 	"github.com/moovweb/gokogiri/xml"
@@ -30,7 +31,7 @@ type Scenario struct {
 	PostData map[string]string
 	Headers  map[string]string
 
-	Expectation           Expectation
+	Expectation           scenario.Expectation
 	ExpectedStatusCode    int
 	ExpectedLocation      string
 	ExpectedHeaders       map[string]string
@@ -46,7 +47,7 @@ func NewScenario(method, path string) *Scenario {
 		Method: method,
 		Path:   path,
 
-		Expectation: Expectation{
+		Expectation: scenario.Expectation{
 			StatusCode: http.StatusOK,
 			Headers:    map[string]string{},
 			Selectors:  []string{},

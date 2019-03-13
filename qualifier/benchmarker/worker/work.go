@@ -94,7 +94,7 @@ func (w *Worker) SendScore(apiKey string, score float64, successes, fails int32,
 	for key, val := range metadata {
 		sendResult.PostData["metadata["+key+"]"] = val
 	}
-	sendResult.Expectation = Expectation{StatusCode: http.StatusCreated}
+	sendResult.Expectation.StatusCode = http.StatusCreated
 	sendResult.ExpectedStatusCode = 201
 	return sendResult.Play(w)
 }

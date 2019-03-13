@@ -5,16 +5,13 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 
 	"github.com/KentaKudo/isucon4/qualifier/benchmarker/ip"
 	"github.com/KentaKudo/isucon4/qualifier/benchmarker/scenario"
-	"github.com/moovweb/gokogiri"
-	"github.com/moovweb/gokogiri/html"
-	"github.com/moovweb/gokogiri/xml"
+	"github.com/PuerkitoBio/goquery"
 )
 
 const (
@@ -30,8 +27,7 @@ type Scenario struct {
 	PostData map[string]string
 	Headers  map[string]string
 
-	Expectation    scenario.Expectation
-	ExpectedAssets map[string]string
+	Expectation scenario.Expectation
 }
 
 func NewScenario(method, path string) *Scenario {
@@ -45,7 +41,6 @@ func NewScenario(method, path string) *Scenario {
 			Selectors:  []string{},
 			Assets:     map[string]string{},
 		},
-		ExpectedAssets: map[string]string{},
 	}
 }
 
@@ -81,12 +76,8 @@ func (s *Scenario) Play(w *Worker) error {
 		return w.Fail(res.Request, err)
 	}
 
-	body, _ := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
-
-	doc, err := gokogiri.ParseHtml(body)
-	defer doc.Free()
-
+	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return w.Fail(res.Request, fmt.Errorf("Invalid html document"))
 	}
@@ -97,7 +88,7 @@ func (s *Scenario) Play(w *Worker) error {
 	return nil
 }
 
-func (s *Scenario) CheckAssets(w *Worker, doc *html.HtmlDocument) {
+func (s *Scenario) CheckAssets(w *Worker, doc *goquery.Document) {
 	var wg sync.WaitGroup
 
 	base, err := url.Parse(s.Path)
@@ -106,53 +97,25 @@ func (s *Scenario) CheckAssets(w *Worker, doc *html.HtmlDocument) {
 		return
 	}
 
-	// <link>
-	links, err := doc.Search("//link")
-	if err == nil {
-		for _, link := range links {
-			if link.Attr("href") != "" {
+	for tag, attr := range map[string]string{
+		"link": "href", "script": "src", "img": "src",
+	} {
+		doc.Find(tag).Each(func(i int, sel *goquery.Selection) {
+			if uri, ok := sel.Attr(attr); ok && uri != "" {
 				wg.Add(1)
-				go func(link xml.Node) {
-					s.GetAsset(w, base, link, "href")
+				go func() {
+					s.GetAsset(w, base, uri)
 					wg.Done()
-				}(link)
+				}()
 			}
-		}
-	}
-
-	// <script>
-	scripts, err := doc.Search("//script")
-	if err == nil {
-		for _, script := range scripts {
-			if script.Attr("src") != "" {
-				wg.Add(1)
-				go func(script xml.Node) {
-					s.GetAsset(w, base, script, "src")
-					wg.Done()
-				}(script)
-			}
-		}
-	}
-
-	// img
-	imgs, err := doc.Search("//img")
-	if err == nil {
-		for _, img := range imgs {
-			if img.Attr("src") != "" {
-				wg.Add(1)
-				go func(img xml.Node) {
-					s.GetAsset(w, base, img, "src")
-					wg.Done()
-				}(img)
-			}
-		}
+		})
 	}
 
 	wg.Wait()
 }
 
-func (s *Scenario) GetAsset(w *Worker, base *url.URL, node xml.Node, attr string) error {
-	path, err := url.Parse(node.Attr(attr))
+func (s *Scenario) GetAsset(w *Worker, base *url.URL, relpath string) error {
+	path, err := url.Parse(relpath)
 
 	if err != nil {
 		return w.Fail(nil, err)
@@ -173,7 +136,7 @@ func (s *Scenario) GetAsset(w *Worker, base *url.URL, node xml.Node, attr string
 	md5sum := calcMD5(res.Body)
 	defer res.Body.Close()
 
-	if expectedMD5, ok := s.ExpectedAssets[requestURI.RequestURI()]; ok {
+	if expectedMD5, ok := s.Expectation.Assets[requestURI.RequestURI()]; ok {
 		if md5sum == expectedMD5 {
 			w.Success(StaticFileScore)
 		} else {

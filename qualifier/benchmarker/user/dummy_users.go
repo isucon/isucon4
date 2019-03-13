@@ -12,7 +12,7 @@ import (
 var (
 	DummyUsersTSVMD5     string
 	DummyUsersUsedTSVMD5 string
-	DebugMode  string
+	DebugMode            string
 )
 
 var DummyUsers []*User

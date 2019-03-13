@@ -33,7 +33,6 @@ func (e Expectation) Check(res *http.Response) error {
 		}
 	}
 
-	defer res.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return fmt.Errorf("Invalid html document")

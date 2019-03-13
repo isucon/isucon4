@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ type Scenario struct {
 	PostData map[string]string
 	Headers  map[string]string
 
+	Expectation           Expectation
 	ExpectedStatusCode    int
 	ExpectedLocation      string
 	ExpectedHeaders       map[string]string
@@ -44,6 +46,13 @@ func NewScenario(method, path string) *Scenario {
 		Method: method,
 		Path:   path,
 
+		Expectation: Expectation{
+			StatusCode: http.StatusOK,
+			Headers:    map[string]string{},
+			Selectors:  []string{},
+			Assets:     map[string]string{},
+			Checksum:   "",
+		},
 		ExpectedStatusCode: 200,
 		ExpectedHeaders:    map[string]string{},
 		ExpectedSelectors:  []string{},
@@ -76,9 +85,12 @@ func (s *Scenario) Play(w *Worker) error {
 	}
 
 	res, err := w.SendRequest(req, false)
-
 	if err != nil {
 		return w.Fail(req, err)
+	}
+
+	if err := s.Expectation.Check(res); err != nil {
+		return w.Fail(res.Request, err)
 	}
 
 	if res.StatusCode != s.ExpectedStatusCode {
